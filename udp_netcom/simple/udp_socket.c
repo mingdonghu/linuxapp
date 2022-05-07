@@ -1,25 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/types.h>	       /* See NOTES */
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <string.h>
+#include "udp_socket.h"
 
-typedef enum
-{
-    server = 0, client = 1
-}OBJn_t;
-
-#define DEBUG
-
-int create_socket(OBJn_t obj, const char *ip, const char *port, struct sockaddr_in *pnet_addr, socklen_t net_addrlen)
-{
+int create_socket(OBJn_t obj, const char *ip, const char *port, struct sockaddr_in *pnet_addr, socklen_t net_addrlen) {
     int sockfd;
 
     sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-    if(sockfd == -1)
-    {
+    if(sockfd == -1) {
         perror("fail to creat socket");
         exit(EXIT_FAILURE);
     }
@@ -28,10 +13,8 @@ int create_socket(OBJn_t obj, const char *ip, const char *port, struct sockaddr_
     pnet_addr->sin_port = htons((short)atoi(port));
     pnet_addr->sin_addr.s_addr = inet_addr(ip);
 
-   if(obj == server)
-   {
-       if( bind(sockfd,(const struct sockaddr*) pnet_addr, net_addrlen) == -1)
-       {
+   if(obj == SERVER){
+       if( bind(sockfd,(const struct sockaddr*) pnet_addr, net_addrlen) == -1) {
           perror("fail to bind");
           exit(EXIT_FAILURE);
        }
@@ -41,8 +24,7 @@ int create_socket(OBJn_t obj, const char *ip, const char *port, struct sockaddr_
    return sockfd;
 }
 
-ssize_t recv_dgram_data(int sockfd, char *buf , int size)
-{
+ssize_t recv_dgram_data(int sockfd, char *buf , int size) {
     ssize_t n;
     struct sockaddr_in peer_addr;
     int addrlen = sizeof(peer_addr);
@@ -51,8 +33,7 @@ ssize_t recv_dgram_data(int sockfd, char *buf , int size)
     char debug[1024];
 #endif
     n = recvfrom(sockfd, buf, size, 0, (struct sockaddr *)&peer_addr, &addrlen);
-    if(n < 0)
-    {
+    if(n < 0){
         perror("fail to recvform");
         exit(EXIT_FAILURE);
     }
@@ -69,24 +50,20 @@ ssize_t recv_dgram_data(int sockfd, char *buf , int size)
     return n;
 }
 
-void loop_recv_dgram_data(int sockfd)
-{
-     char recv_buf[1024];  //接收数据的缓存区 
+void loop_recv_dgram_data(int sockfd) {
+    char recv_buf[1024];  //recv data buffer 
 
-     while(1)
-     {
-         recv_dgram_data(sockfd, recv_buf, sizeof(recv_buf));
-     }
+    while(1) {
+        recv_dgram_data(sockfd, recv_buf, sizeof(recv_buf));
+    }
 }
 
 
-ssize_t trans_dgram_data(int sockfd, char *buf, int size, struct sockaddr_in *pnet_addr, socklen_t net_addrlen)
-{
+ssize_t trans_dgram_data(int sockfd, char *buf, int size, struct sockaddr_in *pnet_addr, socklen_t net_addrlen) {
     ssize_t n;
 
     n = sendto(sockfd, buf, size, 0, (struct sockaddr *)pnet_addr, net_addrlen);
-    if(n == -1)
-    {
+    if(n == -1) {
         perror("fail to sendto");
         exit(EXIT_FAILURE);
     }
@@ -94,12 +71,10 @@ ssize_t trans_dgram_data(int sockfd, char *buf, int size, struct sockaddr_in *pn
     return n;
 }
 
-void loop_trans_dgram_data(int sockfd, struct sockaddr_in *pnet_addr, socklen_t net_addrlen)
-{ 
+void loop_trans_dgram_data(int sockfd, struct sockaddr_in *pnet_addr, socklen_t net_addrlen) { 
     char trans_buf[1024];
 
-   while(1)
-   {
+   while(1) {
        printf(">input <<");
        fgets(trans_buf, sizeof(trans_buf), stdin);
        trans_dgram_data(sockfd, trans_buf, sizeof(trans_buf), pnet_addr, net_addrlen);
