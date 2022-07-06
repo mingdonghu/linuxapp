@@ -39,3 +39,11 @@ case ${NUM} in
   *) printf "error\n"
   ;;
 esac
+
+# 4. while
+read -p "input loop number:" LOOP_NUM
+while(( $LOOP_NUM>0 ))
+do
+  echo $LOOP_NUM
+  let "LOOP_NUM--"
+done
