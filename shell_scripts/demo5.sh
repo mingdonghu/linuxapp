@@ -47,3 +47,31 @@ do
   echo $LOOP_NUM
   let "LOOP_NUM--"
 done
+
+# 5. select 循环
+:<<!
+select 菜单对象 in 列表项内容
+do
+  相关命令
+done
+!
+
+select DAY in Mon Tue Wed Thu Fri Sat Sun
+do
+  case $DAY in
+    Mon) echo "Today is Monday" 
+      ;;
+    Tue) echo "Today is Tuesday" 
+      ;;
+    Wed) echo "Today is Wednesday" 
+      ;;
+    Thu) echo "Today is Thursday" 
+      ;;
+    Fri) echo "Today is Friday" 
+      ;;
+    Sat|Sun) echo "You can have a rest today" 
+      ;;
+    *) echo "Unknown input, exit now" && break 
+      ;;
+  esac
+done
