@@ -16,7 +16,7 @@ public:
   }
 
   void ReadCall(const char *byte, size_t len) {
-    printf("recv:");
+    printf("udp-client recv:");
     for (int i = 0; i < len; i++) {
       printf("%x ", (uint8_t)byte[i]);
     }
@@ -45,14 +45,17 @@ int main(int argc, const char *argv[]) {
   printf("client: create socket is ok.\n");
   uint8_t trans_buf[10] = {0xaa, 0xaa, 0x44, 0x55, 0x66};
   uint32_t tx_len;
-  printf("trans data..\n");
-
   while (1) {
     if (!client_udp_network->TransToNet((uint8_t *)trans_buf, sizeof(trans_buf), &tx_len)) {
       perror("client: trans info is fail.");
       exit(EXIT_FAILURE);
     }
-    usleep(1000);
+    printf("send:");
+    for (int i = 0; i < (int)tx_len; i++) {
+      printf("%x ", trans_buf[i]);
+    }
+    printf("\n");
+    sleep(1);
   }
 
   client_udp_network->CloseSocket();

@@ -43,8 +43,6 @@ public:
 
   bool CloseSocket();
 
-  bool RecvFromNet(uint8_t *rx_buf , uint32_t rx_buff_len, uint32_t *rx_len);
-
   bool TransToNet(uint8_t *tx_buf, uint32_t tx_buff_len, uint32_t *tx_len);
 
   void SetRecvCallback(std::function<void(const char *, size_t length)> callback);
@@ -63,6 +61,8 @@ private:
   std::string server_ip_, server_port_;
   std::string client_ip_, client_port_;
 
+  bool RecvFromNet(uint8_t *rx_buf , uint32_t rx_buff_len, uint32_t *rx_len);
+
   static void RecvThreadProc(void *param);
 };
 
@@ -76,8 +76,6 @@ public:
   bool CreateSocket(NetCommDevTypeDef obj, const char *ip, const char *port);
 
   bool CloseSocket();
-
-  bool RecvFromNet(uint8_t *rx_buf , uint32_t rx_buff_len, uint32_t *rx_len);
 
   bool TransToNet(uint8_t *tx_buf, uint32_t tx_buff_len, uint32_t *tx_len);
 
@@ -93,6 +91,8 @@ private:
   NetCommDevTypeDef ncd_;
   std::atomic<bool> is_cmd_created_, recv_thread_exit_flag_;
   std::function<void(const char *, size_t length)> recv_callback_;
+
+  bool RecvFromNet(uint8_t *rx_buf , uint32_t rx_buff_len, uint32_t *rx_len);
   
   static void RecvThreadProc(void *param);
 };

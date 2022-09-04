@@ -164,8 +164,6 @@ bool UDPSocketInterfaceLinux::TransToNet(uint8_t *tx_buf, uint32_t tx_buff_len, 
       } else {
         recver_net_addr.sin_addr.s_addr = inet_addr(client_ip_.c_str());
         recver_net_addr.sin_port = htons((short)atoi(client_port_.c_str()));
-        printf("Reciver IP:%s\n", client_ip_.c_str());
-        printf("Reciver port:%s\n", client_port_.c_str());
       }
     }
 
@@ -173,8 +171,10 @@ bool UDPSocketInterfaceLinux::TransToNet(uint8_t *tx_buf, uint32_t tx_buff_len, 
         (struct sockaddr *)&recver_net_addr, (socklen_t)addrlen);
     if ((len != -1) && (tx_len != nullptr)) {
       *tx_len = len;
+      printf("send lens:%d\n", len);
+      printf("Reciver IP:%s\n", inet_ntoa(recver_net_addr.sin_addr));
+      printf("Reciver port:%d\n", ntohs(recver_net_addr.sin_port));
     }
-    printf("send lens:%d\n", len);
   }
 
   return ((len == -1) ? false : true);
