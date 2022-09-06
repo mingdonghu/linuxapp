@@ -186,7 +186,7 @@ void UDPSocketInterfaceLinux::SetRecvCallback(std::function<void(const char *, s
 
 bool UDPSocketInterfaceLinux::IsCreated() {
   return is_cmd_created_.load(); 
-};
+}
 
 void UDPSocketInterfaceLinux::RecvThreadProc(void *param) {
   UDPSocketInterfaceLinux *cmd_if = (UDPSocketInterfaceLinux *)param;
