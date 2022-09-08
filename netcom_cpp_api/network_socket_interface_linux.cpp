@@ -20,7 +20,7 @@ UDPSocketInterfaceLinux::~UDPSocketInterfaceLinux() {
 
 bool UDPSocketInterfaceLinux::CreateSocket(NetCommDevTypeDef obj, const char *ip, const char *port) {
 
-  if (IsCreated()) {
+  if (is_cmd_created_ == true) {
     perror("repeat create socket.");
     return false;
   }
@@ -65,19 +65,19 @@ bool UDPSocketInterfaceLinux::CreateSocket(NetCommDevTypeDef obj, const char *ip
   server_port_ = port;
 
   // create recv process thread.
-  recv_thread_exit_flag_.store(false);
+  recv_thread_exit_flag_ = false;
   recv_thread_ = new std::thread(RecvThreadProc, this);
-  is_cmd_created_.store(true);
+  is_cmd_created_ = true;
 
   return true;
 }
 
 bool UDPSocketInterfaceLinux::CloseSocket() {
-  if (!IsCreated()) {
+  if (is_cmd_created_ == false) {
     return true;
   }
 
-  recv_thread_exit_flag_.store(true);
+  recv_thread_exit_flag_ = true;
 
   if (com_sockfd_ != -1) {
     close(com_sockfd_);
@@ -90,7 +90,7 @@ bool UDPSocketInterfaceLinux::CloseSocket() {
     recv_thread_ = nullptr;
   }
 
-  is_cmd_created_.store(false);
+  is_cmd_created_ = false;
 
   return true;
 }
@@ -183,10 +183,6 @@ bool UDPSocketInterfaceLinux::TransToNet(uint8_t *tx_buf, uint32_t tx_buff_len, 
 void UDPSocketInterfaceLinux::SetRecvCallback(std::function<void(const char *, size_t length)> callback) {
     recv_callback_ = callback;
 }  
-
-bool UDPSocketInterfaceLinux::IsCreated() {
-  return is_cmd_created_.load(); 
-}
 
 void UDPSocketInterfaceLinux::RecvThreadProc(void *param) {
   UDPSocketInterfaceLinux *cmd_if = (UDPSocketInterfaceLinux *)param;
@@ -306,19 +302,19 @@ bool TCPSocketInterfaceLinux::CreateSocket(NetCommDevTypeDef obj, const char *ip
   }
 
    // create recv process thread.
-  recv_thread_exit_flag_.store(false);
+  recv_thread_exit_flag_ = false;
   recv_thread_ = new std::thread(RecvThreadProc, this);
-  is_cmd_created_.store(true);
+  is_cmd_created_ = true;
 
   return true;
 }
 
 bool TCPSocketInterfaceLinux::CloseSocket() {
-  if (!IsCreated()) {
+  if (is_cmd_created_ == false) {
     return true;
   }
 
-  recv_thread_exit_flag_.store(true);
+  recv_thread_exit_flag_ = true;
 
   if (com_sockfd_ != -1) {
     close(com_sockfd_);
@@ -336,7 +332,7 @@ bool TCPSocketInterfaceLinux::CloseSocket() {
     recv_thread_ = nullptr;
   }
 
-  is_cmd_created_.store(false);
+  is_cmd_created_ = false;
 
   return true;
 }
@@ -417,10 +413,6 @@ bool TCPSocketInterfaceLinux::TransToNet(uint8_t *tx_buf, uint32_t tx_buff_len, 
 
 void TCPSocketInterfaceLinux::SetRecvCallback(std::function<void(const char *, size_t length)> callback) {
   recv_callback_ = callback;
-}
-
-bool TCPSocketInterfaceLinux::IsCreated() {
-  return is_cmd_created_.load();
 }
 
 void TCPSocketInterfaceLinux::RecvThreadProc(void *param) {

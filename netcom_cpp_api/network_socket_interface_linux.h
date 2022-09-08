@@ -47,8 +47,6 @@ public:
 
   void SetRecvCallback(std::function<void(const char *, size_t length)> callback);
 
-  bool IsCreated();
-
   bool IsClientAck() { return is_server_recv_ack_flag_.load();}
 
 private:
@@ -60,6 +58,8 @@ private:
   std::function<void(const char *, size_t length)> recv_callback_;
   std::string server_ip_, server_port_;
   std::string client_ip_, client_port_;
+
+  bool IsCreated() { return is_cmd_created_.load(); }
 
   bool RecvFromNet(uint8_t *rx_buf , uint32_t rx_buff_len, uint32_t *rx_len);
 
@@ -81,8 +81,6 @@ public:
 
   void SetRecvCallback(std::function<void(const char *, size_t length)> callback);
 
-  bool IsCreated();
-
 private:
   std::thread *recv_thread_;
   long long recv_count_;
@@ -91,6 +89,8 @@ private:
   NetCommDevTypeDef ncd_;
   std::atomic<bool> is_cmd_created_, recv_thread_exit_flag_;
   std::function<void(const char *, size_t length)> recv_callback_;
+
+  bool IsCreated() { return is_cmd_created_.load(); }
 
   bool RecvFromNet(uint8_t *rx_buf , uint32_t rx_buff_len, uint32_t *rx_len);
   
