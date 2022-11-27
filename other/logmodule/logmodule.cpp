@@ -184,13 +184,26 @@ void LogModule::UnLock() {
 
 std::string LogModule::GetCurrentTime() {
 	std::string curr_time;
+#if 0
 	//Current date/time based on current time
-	time_t now = time(0); 
+	time_t now = time(0);               // 英文风格时间字符格式 
 	// Convert current time to string
 	curr_time.assign(ctime(&now));
 	// Last charactor of currentTime is "\n", so remove it
 	std::string current_time = curr_time.substr(0, curr_time.size()-1);
 	return current_time;
+#else
+  char stdtime_str[50] = {0};  // ISO 国际时间
+	time_t std_time = 0;
+	struct tm* local_time = NULL;
+	std_time = time(NULL);
+	local_time = localtime(&std_time);
+	snprintf(stdtime_str, 50, "%d-%2d-%2d,%2d:%2d:%2d", 
+	local_time->tm_year+1900, local_time->tm_mon+1, local_time->tm_mday,
+	local_time->tm_hour, local_time->tm_min, local_time->tm_sec);
+	curr_time.assign(stdtime_str);
+  return curr_time;
+#endif
 }
 
 std::string LogModule::GetFormatValue(std::string str_value) {
@@ -218,7 +231,7 @@ std::string  LogModule::GetLevelValue(int level){
 		tmp = "DEBUG";
 		break;
 	case WARNING_LEVEL:
-		tmp = "WARNING";
+		tmp = "WARN";
 		break;
 	case ERROR_LEVEL:
 		tmp = "ERROR";
@@ -250,14 +263,15 @@ void LogPrint::free(ILogRealization *plogger) {
 }
 
 void LogPrint::LogPrintInf(const char* str) {
-#ifdef ENABLE_CONSOLE_LOG_DIS
+#ifdef ENABLE_CONSOLE_LOG_DISPLAY
 	printf("%s\r\n", str);
 #endif
 
 #ifdef ENABLE_LOG_WRITE_TO_FILE
-	FILE *fp = fopen(LOGFILEPATH,"a");
+  std::string log_file_name = GetLogFilePathName();
+	FILE *fp = fopen(log_file_name.c_str() ,"a");
 	if(!fp) {
-		printf("%s open filed!\n", LOGFILEPATH);
+		printf("%s open filed!\n", log_file_name.c_str());
 		return ;
 	}
 	printf_s(fp,str);
