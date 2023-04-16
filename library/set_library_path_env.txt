@@ -1,0 +1,3 @@
+# 当动态库和静态库同时存在时，首先链接动态库，需要设置如下环境变量
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`
+env | grep "LD_LIBRARY_PATH"

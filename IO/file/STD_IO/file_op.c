@@ -21,7 +21,7 @@ int main(int argc, const char *argv[])
 
     int ret_fputc = fputc(c, stdout);
     
-    printf("ret_fputc = %d\n", ret_fputc);
+    printf("ret_fputc = %d, '%c'\n", ret_fputc, (char)ret_fputc);
 
     fclose(fp_file);
 

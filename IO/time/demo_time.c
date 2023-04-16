@@ -10,7 +10,7 @@
 int main(int argc, const char *argv[])
 {
     time_t t;
-    struct tm *mytm;
+    struct tm *mytm; 
 
     //每秒打印时间
     while(1)
