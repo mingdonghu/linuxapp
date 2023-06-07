@@ -102,7 +102,7 @@ read -p "please input str_a:" VAR_A
 read -p "please input str_b:" VAR_B
 
 ## 字符串相等判断
-if [ ${VAR_A} = ${VAR_B} ]
+if [ ${VAR_A} == ${VAR_B} ]
 then
   echo "a 等于 b"
 fi
