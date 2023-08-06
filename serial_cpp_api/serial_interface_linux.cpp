@@ -1,5 +1,7 @@
 #include "serial_interface_linux.h"
 
+#define USE_NO_STD_BAUDRATE  0
+
 #define MAX_ACK_BUF_LEN 4096
 
 SerialInterfaceLinux::SerialInterfaceLinux()
@@ -21,6 +23,8 @@ bool SerialInterfaceLinux::Open(std::string &port_name, uint32_t com_baudrate) {
 
   com_baudrate_ = com_baudrate;
 
+#if (USE_NO_STD_BAUDRATE == 1)
+// 非標準波特率設置
   struct asmtermios::termios2 options;
   if (ioctl(com_handle_, _IOC(_IOC_READ, 'T', 0x2A, sizeof(struct asmtermios::termios2)), &options)) {
     printf("TCGETS2 first error, errno:%s",strerror(errno));
@@ -64,6 +68,44 @@ bool SerialInterfaceLinux::Open(std::string &port_name, uint32_t com_baudrate) {
   }
 
   printf("Actual BaudRate reported:%d",options.c_ospeed);
+
+#else
+// get port options
+  struct termios options;
+  if (-1 == tcgetattr(com_handle_, &options)) {
+    if (com_handle_ != -1) {
+      close(com_handle_);
+      com_handle_ = -1;
+    }
+    std::cout << "CmdInterfaceLinux::Open tcgetattr error!" << std::endl;
+    return false;
+  }
+
+  options.c_cflag |= (tcflag_t)(CLOCAL | CREAD | CS8 | CRTSCTS);
+  options.c_cflag &= (tcflag_t) ~(CSTOPB | PARENB | PARODD);
+  options.c_lflag &= (tcflag_t) ~(ICANON | ECHO | ECHOE | ECHOK | ECHONL |
+                                  ISIG | IEXTEN);  //|ECHOPRT
+  options.c_oflag &= (tcflag_t) ~(OPOST);
+  options.c_iflag &=
+      (tcflag_t) ~(IXON | IXOFF | INLCR | IGNCR | ICRNL | IGNBRK);
+
+  options.c_cc[VMIN] = 0;
+  options.c_cc[VTIME] = 0;
+
+  cfsetispeed(&options, B230400);
+
+  if (tcsetattr(com_handle_, TCSANOW, &options) < 0) {
+    if (com_handle_ != -1) {
+      close(com_handle_);
+      com_handle_ = -1;
+    }
+    std::cout << "CmdInterfaceLinux::Open tcsetattr error!" << std::endl;
+    return false;
+  }
+
+
+#endif
+
 
   tcflush(com_handle_, TCIFLUSH);
 

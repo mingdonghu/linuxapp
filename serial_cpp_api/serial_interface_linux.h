@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <errno.h>
 #include <inttypes.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <memory.h>
 #include <string.h>
