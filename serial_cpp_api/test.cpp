@@ -1,12 +1,15 @@
 #include "serial_interface_linux.h"
 
+#include <bitset>
+
 int main(int argc, char const *argv[]) {
 
   SerialInterfaceLinux* cmd_port = new SerialInterfaceLinux;
 
   cmd_port->SetReadCallback([](const char* data, size_t length){
+    std::cout << "read from IO:";
     for(int i = 0; i < length; i++) {
-      std::cout << "0x" << std::hex << data[i] << " ";
+      std::cout << "0x" << std::hex << static_cast<int>(data[i]) << "-- 0b" << std::bitset<8>{static_cast<int>(data[i])} << " ";
     }
     std::cout << std::endl;
   });

@@ -1,5 +1,7 @@
 #include "serial_interface_linux.h"
 
+#include "serial_linux_api.h"
+
 #define USE_NO_STD_BAUDRATE  0
 
 #define MAX_ACK_BUF_LEN 4096
@@ -13,6 +15,7 @@ SerialInterfaceLinux::SerialInterfaceLinux()
 SerialInterfaceLinux::~SerialInterfaceLinux() { Close(); }
 
 bool SerialInterfaceLinux::Open(std::string &port_name, uint32_t com_baudrate) {
+#if 0
   int flags = (O_RDWR | O_NOCTTY | O_NONBLOCK);
 
   com_handle_ = open(port_name.c_str(), flags);
@@ -102,12 +105,28 @@ bool SerialInterfaceLinux::Open(std::string &port_name, uint32_t com_baudrate) {
     std::cout << "CmdInterfaceLinux::Open tcsetattr error!" << std::endl;
     return false;
   }
-
-
 #endif
 
-
   tcflush(com_handle_, TCIFLUSH);
+
+#else
+  com_handle_ = serial_linux_open(port_name.c_str());
+  if (-1 == com_handle_) {
+    printf("SerialInterfaceLinux::Open open error, errno:%s",strerror(errno));
+    return false;
+  }
+
+  int ret = serial_linux_config(com_handle_, com_baudrate, 8, 'n', 1);
+  if (-1 == ret) {
+    if (com_handle_ != -1) {
+      close(com_handle_);
+      com_handle_ = -1;
+    }
+    printf("serial_linux_config() error, errno:%s", strerror(errno));
+    return false;
+  }
+#endif
+
 
   rx_thread_exit_flag_ = false;
   rx_thread_ = new std::thread(RxThreadProc, this);
