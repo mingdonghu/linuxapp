@@ -1,8 +1,19 @@
 #include "serial_interface_linux.h"
-
 #include "serial_linux_api.h"
 
-#define USE_NO_STD_BAUDRATE  0
+#include <stdio.h>
+#include <errno.h>
+#include <inttypes.h>
+#include <fcntl.h>
+#include <memory.h>
+#include <string.h>
+#include <sys/file.h>
+#include <sys/ioctl.h>
+namespace asmtermios {
+#include <linux/termios.h>
+}
+#include <termios.h>
+#include <unistd.h>
 
 #define MAX_ACK_BUF_LEN 4096
 
@@ -15,7 +26,30 @@ SerialInterfaceLinux::SerialInterfaceLinux()
 SerialInterfaceLinux::~SerialInterfaceLinux() { Close(); }
 
 bool SerialInterfaceLinux::Open(std::string &port_name, uint32_t com_baudrate) {
-#if 0
+  com_handle_ = serial_linux_open(port_name.c_str());
+  if (-1 == com_handle_) {
+    printf("SerialInterfaceLinux::Open open error, errno:%s",strerror(errno));
+    return false;
+  }
+
+  int ret = serial_linux_config(com_handle_, com_baudrate, 8, 'n', 1);
+  if (-1 == ret) {
+    if (com_handle_ != -1) {
+      close(com_handle_);
+      com_handle_ = -1;
+    }
+    printf("serial_linux_config() error, errno:%s", strerror(errno));
+    return false;
+  }
+
+  rx_thread_exit_flag_ = false;
+  rx_thread_ = new std::thread(RxThreadProc, this);
+  is_cmd_opened_ = true;
+
+  return true;
+}
+
+bool SerialInterfaceLinux::OpenIoctl(std::string &port_name, uint32_t com_baudrate) {
   int flags = (O_RDWR | O_NOCTTY | O_NONBLOCK);
 
   com_handle_ = open(port_name.c_str(), flags);
@@ -26,7 +60,6 @@ bool SerialInterfaceLinux::Open(std::string &port_name, uint32_t com_baudrate) {
 
   com_baudrate_ = com_baudrate;
 
-#if (USE_NO_STD_BAUDRATE == 1)
 // 非標準波特率設置
   struct asmtermios::termios2 options;
   if (ioctl(com_handle_, _IOC(_IOC_READ, 'T', 0x2A, sizeof(struct asmtermios::termios2)), &options)) {
@@ -72,7 +105,57 @@ bool SerialInterfaceLinux::Open(std::string &port_name, uint32_t com_baudrate) {
 
   printf("Actual BaudRate reported:%d",options.c_ospeed);
 
-#else
+// // get port options
+//   struct termios options;
+//   if (-1 == tcgetattr(com_handle_, &options)) {
+//     if (com_handle_ != -1) {
+//       close(com_handle_);
+//       com_handle_ = -1;
+//     }
+//     std::cout << "CmdInterfaceLinux::Open tcgetattr error!" << std::endl;
+//     return false;
+//   }
+
+//   options.c_cflag |= (tcflag_t)(CLOCAL | CREAD | CS8 | CRTSCTS);
+//   options.c_cflag &= (tcflag_t) ~(CSTOPB | PARENB | PARODD);
+//   options.c_lflag &= (tcflag_t) ~(ICANON | ECHO | ECHOE | ECHOK | ECHONL |
+//                                   ISIG | IEXTEN);  //|ECHOPRT
+//   options.c_oflag &= (tcflag_t) ~(OPOST);
+//   options.c_iflag &=
+//       (tcflag_t) ~(IXON | IXOFF | INLCR | IGNCR | ICRNL | IGNBRK);
+
+//   options.c_cc[VMIN] = 0;
+//   options.c_cc[VTIME] = 0;
+
+//   cfsetispeed(&options, B230400);
+
+//   if (tcsetattr(com_handle_, TCSANOW, &options) < 0) {
+//     if (com_handle_ != -1) {
+//       close(com_handle_);
+//       com_handle_ = -1;
+//     }
+//     std::cout << "CmdInterfaceLinux::Open tcsetattr error!" << std::endl;
+//     return false;
+//   }
+
+  tcflush(com_handle_, TCIFLUSH);
+
+  rx_thread_exit_flag_ = false;
+  rx_thread_ = new std::thread(RxThreadProc, this);
+  is_cmd_opened_ = true;
+
+  return true;
+}
+
+bool SerialInterfaceLinux::Open(std::string &port_name) {
+  int flags = (O_RDWR | O_NOCTTY | O_NONBLOCK);
+
+  com_handle_ = open(port_name.c_str(), flags);
+  if (-1 == com_handle_) {
+    printf("SerialInterfaceLinux::Open open error, errno:%s",strerror(errno));
+    return false;
+  }
+
 // get port options
   struct termios options;
   if (-1 == tcgetattr(com_handle_, &options)) {
@@ -84,18 +167,14 @@ bool SerialInterfaceLinux::Open(std::string &port_name, uint32_t com_baudrate) {
     return false;
   }
 
-  options.c_cflag |= (tcflag_t)(CLOCAL | CREAD | CS8 | CRTSCTS);
+  options.c_cflag |= (tcflag_t)(CLOCAL | CREAD | CS8);
   options.c_cflag &= (tcflag_t) ~(CSTOPB | PARENB | PARODD);
-  options.c_lflag &= (tcflag_t) ~(ICANON | ECHO | ECHOE | ECHOK | ECHONL |
-                                  ISIG | IEXTEN);  //|ECHOPRT
+  options.c_lflag &= (tcflag_t) ~(ICANON | ECHO | ECHOE | ECHOK | ECHONL | ISIG | IEXTEN);  //|ECHOPRT
   options.c_oflag &= (tcflag_t) ~(OPOST);
-  options.c_iflag &=
-      (tcflag_t) ~(IXON | IXOFF | INLCR | IGNCR | ICRNL | IGNBRK);
+  options.c_iflag &= (tcflag_t) ~(IXON | IXOFF | INLCR | IGNCR | ICRNL | IGNBRK);
 
   options.c_cc[VMIN] = 0;
   options.c_cc[VTIME] = 0;
-
-  cfsetispeed(&options, B230400);
 
   if (tcsetattr(com_handle_, TCSANOW, &options) < 0) {
     if (com_handle_ != -1) {
@@ -105,34 +184,12 @@ bool SerialInterfaceLinux::Open(std::string &port_name, uint32_t com_baudrate) {
     std::cout << "CmdInterfaceLinux::Open tcsetattr error!" << std::endl;
     return false;
   }
-#endif
 
   tcflush(com_handle_, TCIFLUSH);
-
-#else
-  com_handle_ = serial_linux_open(port_name.c_str());
-  if (-1 == com_handle_) {
-    printf("SerialInterfaceLinux::Open open error, errno:%s",strerror(errno));
-    return false;
-  }
-
-  int ret = serial_linux_config(com_handle_, com_baudrate, 8, 'n', 1);
-  if (-1 == ret) {
-    if (com_handle_ != -1) {
-      close(com_handle_);
-      com_handle_ = -1;
-    }
-    printf("serial_linux_config() error, errno:%s", strerror(errno));
-    return false;
-  }
-#endif
-
 
   rx_thread_exit_flag_ = false;
   rx_thread_ = new std::thread(RxThreadProc, this);
   is_cmd_opened_ = true;
-
-  return true;
 }
 
 bool SerialInterfaceLinux::Close() {

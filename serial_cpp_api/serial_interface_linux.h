@@ -1,20 +1,6 @@
 #ifndef __LINUX_SERIAL_PORT_H__
 #define __LINUX_SERIAL_PORT_H__
 
-#include <stdio.h>
-#include <errno.h>
-#include <inttypes.h>
-#include <fcntl.h>
-#include <memory.h>
-#include <string.h>
-#include <sys/file.h>
-#include <sys/ioctl.h>
-namespace asmtermios {
-#include <linux/termios.h>
-}
-#include <termios.h>
-#include <unistd.h>
-
 #include <iostream>
 #include <atomic>
 #include <condition_variable>
@@ -31,6 +17,9 @@ class SerialInterfaceLinux {
   ~SerialInterfaceLinux();
   // open serial port
   bool Open(std::string &port_name, uint32_t com_baudrate);  
+  bool OpenIoctl(std::string &port_name, uint32_t com_baudrate);
+  // open usb device port
+  bool Open(std::string &port_name);
   // close serial port
   bool Close();     
   // receive from port channel data                  
